@@ -1,0 +1,100 @@
+{
+  "name": "worktree-helper",
+  "displayName": "Worktree Helper",
+  "description": "Create git worktrees with environment configuration directly from the VS Code Command Palette.",
+  "version": "0.0.1",
+  "publisher": "BrunoCCPires",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:worktree-helper.createWorktree"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "worktree-helper.createWorktree",
+        "title": "Worktree Helper: Create New Worktree",
+        "category": "Worktree Helper"
+      }
+    ],
+    "configuration": {
+      "title": "Worktree Helper",
+      "properties": {
+        "worktree-helper.presets": {
+          "type": "array",
+          "description": "Presets personalizados com diretórios adicionais para copiar .env e comandos pós-criação.",
+          "default": [],
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Nome do preset exibido na seleção."
+              },
+              "description": {
+                "type": "string",
+                "description": "Descrição opcional mostrada ao escolher o preset."
+              },
+              "envTargets": {
+                "type": "array",
+                "description": "Caminhos relativos à worktree que também devem receber os arquivos .env.",
+                "default": [],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "postCommands": {
+                "type": "array",
+                "description": "Comandos executados após a criação da worktree. Cada comando roda em série.",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "command"
+                  ],
+                  "properties": {
+                    "command": {
+                      "type": "string",
+                      "description": "Binário ou script a ser executado."
+                    },
+                    "args": {
+                      "type": "array",
+                      "description": "Argumentos passados ao comando.",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "cwd": {
+                      "type": "string",
+                      "description": "Diretório de trabalho. Pode ser relativo à worktree ou usar os placeholders ${workspaceRoot} e ${worktreePath}."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "prepublishOnly": "npm run compile",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@types/vscode": "^1.87.0",
+    "typescript": "^5.4.5",
+    "vsce": "^2.15.0"
+  }
+}

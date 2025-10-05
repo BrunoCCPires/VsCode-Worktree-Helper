@@ -1,0 +1,8 @@
+src/**
+node_modules/**
+tsconfig.json
+package-lock.json
+.eslintrc*
+.vscode/**
+.gitignore
+README.md
