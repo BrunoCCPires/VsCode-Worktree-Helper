@@ -20,6 +20,7 @@ interface WorktreePreset {
   description?: string;
   envTargets?: string[];
   postCommands?: PresetCommand[];
+  usePackageManagerInstall?: boolean;
 }
 
 interface NormalizedPreset {
@@ -27,22 +28,66 @@ interface NormalizedPreset {
   description?: string;
   envTargets: string[];
   postCommands: PresetCommand[];
+  usePackageManagerInstall: boolean;
 }
+
+type PackageManagerId = "bun" | "npm" | "yarn" | "pnpm" | "skip";
+
+interface PackageManagerChoice {
+  id: PackageManagerId;
+  label: string;
+  detail: string;
+  installCommand?: PresetCommand;
+}
+
+const packageManagerOptions: PackageManagerChoice[] = [
+  {
+    id: "bun",
+    label: "Bun",
+    detail: "Run bun install in the worktree root.",
+    installCommand: { command: "bun", args: ["install"] },
+  },
+  {
+    id: "npm",
+    label: "npm",
+    detail: "Run npm install in the worktree root.",
+    installCommand: { command: "npm", args: ["install"] },
+  },
+  {
+    id: "yarn",
+    label: "Yarn",
+    detail: "Run yarn install in the worktree root.",
+    installCommand: { command: "yarn", args: ["install"] },
+  },
+  {
+    id: "pnpm",
+    label: "pnpm",
+    detail: "Run pnpm install in the worktree root.",
+    installCommand: { command: "pnpm", args: ["install"] },
+  },
+  {
+    id: "skip",
+    label: "Skip install",
+    detail: "Do not run a package manager install command.",
+  },
+];
 
 const builtInPresets: NormalizedPreset[] = [
   {
     name: "default",
     description:
-      "Copy .env and .env.local to the worktree and run bun install in the root.",
+      "Copy .env files to the worktree and run the selected package manager install in the root.",
     envTargets: [],
-    postCommands: [{ command: "bun", args: ["install"] }],
+    postCommands: [],
+    usePackageManagerInstall: true,
   },
   {
     name: "remetricate",
     description:
       "Default actions plus copy environment files to packages/workflow-platform.",
     envTargets: ["packages/workflow-platform"],
-    postCommands: [{ command: "bun", args: ["install"] }],
+    postCommands: [],
+    usePackageManagerInstall: true,
   },
 ];
 
@@ -79,11 +124,34 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
+      const packageManager = await resolvePackageManagerChoice();
+      if (!packageManager) {
+        log("Action cancelled: no package manager selected.");
+        return;
+      }
+
+      if (packageManager.installCommand) {
+        log(`Selected package manager: ${packageManager.label}`);
+      } else {
+        log("Package manager install command will be skipped.");
+      }
+
       const presets = getAvailablePresets();
       const preset = await promptPreset(presets);
       if (!preset) {
         log("Action cancelled: no preset selected.");
         return;
+      }
+
+      const postCommands = buildPostCommands(preset, packageManager);
+      if (
+        preset.usePackageManagerInstall &&
+        packageManager.id === "skip" &&
+        postCommands.length === preset.postCommands.length
+      ) {
+        log(
+          "Preset requested an install command, but the selection was to skip it."
+        );
       }
 
       const worktreeBase = path.join(workspaceRoot, "worktree");
@@ -109,13 +177,15 @@ export function activate(context: vscode.ExtensionContext) {
             progress.report({ message: "Copying environment files…" });
             await copyEnvFiles(workspaceRoot, worktreePath, preset.envTargets);
 
-            if (preset.postCommands.length > 0) {
+            if (postCommands.length > 0) {
               await runPostCommands(
                 workspaceRoot,
                 worktreePath,
-                preset.postCommands,
+                postCommands,
                 progress
               );
+            } else {
+              log("No post-creation commands configured for this preset.");
             }
           }
         );
@@ -178,6 +248,42 @@ async function promptBranchName(): Promise<string | undefined> {
   });
 
   return branchName?.trim();
+}
+
+async function resolvePackageManagerChoice(): Promise<
+  PackageManagerChoice | undefined
+> {
+  const config = vscode.workspace.getConfiguration("worktree-helper");
+  const configuredId = coercePackageManagerId(config.get("packageManager"));
+  const defaultOption = findPackageManagerOption(configuredId);
+  const promptEachTime = config.get<boolean>("promptPackageManager");
+
+  if (promptEachTime === false) {
+    return defaultOption;
+  }
+
+  const items: Array<vscode.QuickPickItem & { option: PackageManagerChoice }> =
+    packageManagerOptions.map((option) => ({
+      label: option.label,
+      description: option.installCommand
+        ? formatCommand(
+            option.installCommand.command,
+            option.installCommand.args ?? []
+          )
+        : undefined,
+      detail: option.detail,
+      picked: option.id === defaultOption.id,
+      option,
+    }));
+
+  const picked = await vscode.window.showQuickPick(items, {
+    title: "Select package manager",
+    placeHolder:
+      "Choose which package manager install command should run after creating the worktree",
+    ignoreFocusOut: true,
+  });
+
+  return picked?.option;
 }
 
 async function ensureWorktreeIgnored(workspaceRoot: string): Promise<void> {
@@ -313,9 +419,37 @@ async function runPostCommands(
       const stderr = isExecFileError(error)
         ? error.stderr?.toString()
         : undefined;
-    throw new Error(stderr?.trim() || `Failed to run ${label}.`);
+      throw new Error(stderr?.trim() || `Failed to run ${label}.`);
     }
   }
+}
+
+function buildPostCommands(
+  preset: NormalizedPreset,
+  packageManager: PackageManagerChoice
+): PresetCommand[] {
+  const commands: PresetCommand[] = [];
+
+  if (preset.usePackageManagerInstall && packageManager.installCommand) {
+    commands.push({
+      command: packageManager.installCommand.command,
+      args: packageManager.installCommand.args
+        ? [...packageManager.installCommand.args]
+        : undefined,
+    });
+  }
+
+  if (preset.postCommands.length > 0) {
+    commands.push(
+      ...preset.postCommands.map((command) => ({
+        command: command.command,
+        args: command.args ? [...command.args] : undefined,
+        cwd: command.cwd,
+      }))
+    );
+  }
+
+  return commands;
 }
 
 function getAvailablePresets(): NormalizedPreset[] {
@@ -333,6 +467,7 @@ function getAvailablePresets(): NormalizedPreset[] {
         args: command.args ? [...command.args] : undefined,
         cwd: command.cwd,
       })),
+      usePackageManagerInstall: preset.usePackageManagerInstall,
     });
   }
 
@@ -350,6 +485,27 @@ function getAvailablePresets(): NormalizedPreset[] {
   }
 
   return Array.from(presets.values());
+}
+
+function coercePackageManagerId(value: unknown): PackageManagerId | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  return packageManagerOptions.some((option) => option.id === value)
+    ? (value as PackageManagerId)
+    : undefined;
+}
+
+function findPackageManagerOption(id?: PackageManagerId): PackageManagerChoice {
+  if (id) {
+    const match = packageManagerOptions.find((option) => option.id === id);
+    if (match) {
+      return match;
+    }
+  }
+
+  return packageManagerOptions[0];
 }
 
 function normalizePreset(preset: WorktreePreset): NormalizedPreset | undefined {
@@ -394,6 +550,7 @@ function normalizePreset(preset: WorktreePreset): NormalizedPreset | undefined {
     description: preset.description,
     envTargets,
     postCommands,
+    usePackageManagerInstall: preset.usePackageManagerInstall === true,
   };
 }
 

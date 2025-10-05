@@ -9,7 +9,7 @@ Crie worktrees Git com os arquivos de ambiente configurados a partir do Command 
 - Garante que `worktree/` esteja presente no `.gitignore` do projeto.
 - Executa `git worktree add` no diretório raiz do workspace.
 - Copia `.env` e `.env.local` para a nova worktree.
-- Executa automaticamente `bun install` na raiz da worktree (preset "default").
+- Executa automaticamente o comando `install` do gerenciador de pacotes escolhido (ou permite pular).
 - Suporta presets com caminhos adicionais que também recebem os arquivos de ambiente e comandos pós-criação.
 - Abre atalhos para abrir a nova worktree, revelar o diretório no sistema ou visualizar os logs da execução.
 
@@ -17,7 +17,7 @@ Crie worktrees Git com os arquivos de ambiente configurados a partir do Command 
 
 - Node.js 18+
 - npm 9+
-- VS Code 1.70.0 ou superior
+- VS Code 1.87.0 ou superior
 - [vsce](https://code.visualstudio.com/api/working-with-extensions/publishing-extension) instalado globalmente para empacotar a extensão (`npm install -g @vscode/vsce`).
 
 ## Instalação para desenvolvimento
@@ -45,8 +45,9 @@ code --install-extension worktree-helper-0.0.1.vsix
 2. Abra o Command Palette (`Ctrl+Shift+P` ou `Cmd+Shift+P`).
 3. Procure por **"Worktree Helper: Create New Worktree"**.
 4. Informe o nome da pasta e da branch quando solicitado.
-5. Escolha o preset de configuração (o padrão já inclui `bun install`).
-6. Aguarde a confirmação de sucesso e escolha se deseja abrir a worktree, revelar o diretório ou abrir os logs.
+5. Escolha o gerenciador de pacotes (ou pule) quando solicitado.
+6. Escolha o preset de configuração.
+7. Aguarde a confirmação de sucesso e escolha se deseja abrir a worktree, revelar o diretório ou abrir os logs.
 
 > Os logs da execução ficam disponíveis no painel **OUTPUT** do VS Code, canal "Worktree Helper".
 
@@ -54,7 +55,7 @@ code --install-extension worktree-helper-0.0.1.vsix
 
 A extensão já vem com dois presets embutidos:
 
-- **default** – Copia `.env`/`.env.local` para a raiz da worktree e executa `bun install`.
+- **default** – Copia `.env`/`.env.local` para a raiz da worktree e executa `install` com o gerenciador de pacotes escolhido.
 - **remetricate** – Mesmas ações do preset padrão + copia os arquivos de ambiente para `packages/workflow-platform`.
 
 Você pode criar seus próprios presets através das configurações do VS Code (`Settings > Extensions > Worktree Helper` ou editando o `settings.json`):
@@ -64,6 +65,7 @@ Você pode criar seus próprios presets através das configurações do VS Code 
 	{
 		"name": "monorepo",
 		"description": "Copia .env para apps/app-a e roda npm install",
+		"usePackageManagerInstall": true,
 		"envTargets": ["apps/app-a"],
 		"postCommands": [
 			{
@@ -78,6 +80,13 @@ Você pode criar seus próprios presets através das configurações do VS Code 
 
 - `envTargets`: caminhos relativos à raiz da worktree que também receberão os arquivos de ambiente.
 - `postCommands`: comandos executados em série. O campo `cwd` pode ser relativo à worktree ou usar os placeholders `${workspaceRoot}` e `${worktreePath}`.
+- `usePackageManagerInstall`: quando verdadeiro, adiciona automaticamente o comando `install` do gerenciador escolhido antes dos `postCommands` personalizados.
+
+### Configurações rápidas
+
+- `worktree-helper.packageManager`: define o gerenciador de pacotes padrão (`bun`, `npm`, `yarn`, `pnpm` ou `skip`).
+- `worktree-helper.promptPackageManager`: quando ativo (padrão), pergunta qual gerenciador usar a cada criação de worktree.
+- `worktree-helper.presets[].usePackageManagerInstall`: habilita o comando `install` automaticamente para o preset.
 
 ## Personalização
 

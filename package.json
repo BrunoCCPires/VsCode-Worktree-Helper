@@ -30,6 +30,30 @@
     "configuration": {
       "title": "Worktree Helper",
       "properties": {
+        "worktree-helper.packageManager": {
+          "type": "string",
+          "description": "Default package manager used when presets opt in to install commands.",
+          "default": "bun",
+          "enum": [
+            "bun",
+            "npm",
+            "yarn",
+            "pnpm",
+            "skip"
+          ],
+          "enumDescriptions": [
+            "Run bun install.",
+            "Run npm install.",
+            "Run yarn install.",
+            "Run pnpm install.",
+            "Skip the package manager install command."
+          ]
+        },
+        "worktree-helper.promptPackageManager": {
+          "type": "boolean",
+          "description": "Ask which package manager to use every time a worktree is created.",
+          "default": true
+        },
         "worktree-helper.presets": {
           "type": "array",
           "description": "Custom presets with additional directories to copy .env files and post-creation commands.",
@@ -47,6 +71,11 @@
               "description": {
                 "type": "string",
                 "description": "Optional description shown when choosing the preset."
+              },
+              "usePackageManagerInstall": {
+                "type": "boolean",
+                "description": "If true, run the selected package manager install command before the preset's post commands.",
+                "default": false
               },
               "envTargets": {
                 "type": "array",
