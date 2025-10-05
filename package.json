@@ -4,8 +4,13 @@
   "description": "Create git worktrees with environment configuration directly from the VS Code Command Palette.",
   "version": "0.0.1",
   "publisher": "BrunoCCPires",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrunoCCPires/VsCode-Worktree-Helper"
+  },
+  "license": "MIT",
   "engines": {
-    "vscode": "^1.70.0"
+    "vscode": "^1.87.0"
   },
   "categories": [
     "Other"
@@ -27,7 +32,7 @@
       "properties": {
         "worktree-helper.presets": {
           "type": "array",
-          "description": "Presets personalizados com diretórios adicionais para copiar .env e comandos pós-criação.",
+          "description": "Custom presets with additional directories to copy .env files and post-creation commands.",
           "default": [],
           "items": {
             "type": "object",
@@ -37,15 +42,15 @@
             "properties": {
               "name": {
                 "type": "string",
-                "description": "Nome do preset exibido na seleção."
+                "description": "Name of the preset displayed in the selection."
               },
               "description": {
                 "type": "string",
-                "description": "Descrição opcional mostrada ao escolher o preset."
+                "description": "Optional description shown when choosing the preset."
               },
               "envTargets": {
                 "type": "array",
-                "description": "Caminhos relativos à worktree que também devem receber os arquivos .env.",
+                "description": "Relative paths to the worktree that should also receive .env files.",
                 "default": [],
                 "items": {
                   "type": "string"
@@ -53,7 +58,7 @@
               },
               "postCommands": {
                 "type": "array",
-                "description": "Comandos executados após a criação da worktree. Cada comando roda em série.",
+                "description": "Commands executed after worktree creation. Each command runs in series.",
                 "default": [],
                 "items": {
                   "type": "object",
@@ -63,18 +68,18 @@
                   "properties": {
                     "command": {
                       "type": "string",
-                      "description": "Binário ou script a ser executado."
+                      "description": "Binary or script to be executed."
                     },
                     "args": {
                       "type": "array",
-                      "description": "Argumentos passados ao comando.",
+                      "description": "Arguments passed to the command.",
                       "items": {
                         "type": "string"
                       }
                     },
                     "cwd": {
                       "type": "string",
-                      "description": "Diretório de trabalho. Pode ser relativo à worktree ou usar os placeholders ${workspaceRoot} e ${worktreePath}."
+                      "description": "Working directory. Can be relative to the worktree or use the placeholders ${workspaceRoot} and ${worktreePath}."
                     }
                   }
                 }
