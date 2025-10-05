@@ -1,5 +1,6 @@
 src/**
 node_modules/**
+worktree/**
 tsconfig.json
 package-lock.json
 .eslintrc*
