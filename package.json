@@ -2,7 +2,7 @@
   "name": "worktree-helper",
   "displayName": "Worktree Helper",
   "description": "Create git worktrees with environment configuration directly from the VS Code Command Palette.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "BrunoCCPires",
   "repository": {
     "type": "git",
@@ -128,7 +128,7 @@
   "devDependencies": {
     "@types/node": "^20.12.7",
     "@types/vscode": "^1.87.0",
-    "typescript": "^5.4.5",
-    "vsce": "^2.15.0"
+    "@vscode/vsce": "^3.6.2",
+    "typescript": "^5.4.5"
   }
 }
